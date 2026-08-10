@@ -102,3 +102,7 @@ and each student's history queryable via a single indexed field.
 - Pagination on large student/teacher lists
 - Editing existing attendance marks after the session (currently: re-submitting the same session updates in place only if you add that logic — right now duplicate sessions are blocked, which is a deliberate safeguard you may want to relax for corrections)
 - CSV export of attendance
+
+<div align = "center">
+  <sub>Made with ❤️ Vinay Singh Tomar</sub>
+</div>
