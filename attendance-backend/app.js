@@ -58,12 +58,12 @@ app.get("/api/health", (req, res) => {
 });
 
 // ---- Routes ----
-app.use("/api/auth", authRoutes);
-app.use("/api/departments", departmentRoutes);
-app.use("/api/subjects", subjectRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/teachers", teacherRoutes);
-app.use("/api/attendance", attendanceRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/departments", departmentRoutes);
+app.use("/api/v1/subjects", subjectRoutes);
+app.use("/api/v1/students", studentRoutes);
+app.use("/api/v1/teachers", teacherRoutes);
+app.use("/api/v1/attendance", attendanceRoutes);
 
 // ---- 404 handler ----
 app.all("*", (req, res, next) => {
