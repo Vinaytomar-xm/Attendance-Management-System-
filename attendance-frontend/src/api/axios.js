@@ -4,7 +4,7 @@ import axios from "axios";
 // backend is sent automatically with every request — the token itself is
 // never touched or stored by frontend JS.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
   withCredentials: true,
 });
 
