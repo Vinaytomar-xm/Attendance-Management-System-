@@ -54,7 +54,7 @@ app.use("/api", apiLimiter);
 
 // ---- Health check ----
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ success: true, message: "Server is healthy", time: new Date().toISOString() });
+  res.status(200).json({ success: true, message: "Server is running healthy", time: new Date().toISOString() });
 });
 
 // ---- Routes ----
