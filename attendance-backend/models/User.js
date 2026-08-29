@@ -97,6 +97,9 @@ userSchema.methods.isLocked = function () {
 };
 
 userSchema.index({ role: 1, department: 1 });
-userSchema.index({ rollNo: 1, department: 1 });
+userSchema.index(
+  { rollNo: 1, department: 1 },
+  { unique: true, partialFilterExpression: { role: "student" } }
+);
 
 module.exports = mongoose.model("User", userSchema);
