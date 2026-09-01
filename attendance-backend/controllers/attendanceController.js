@@ -157,6 +157,100 @@ exports.getStudentSummary = catchAsync(async (req, res, next) => {
   });
 });
 
+// Teacher's overview: every subject assigned to them, how many students
+// are enrolled in each (by department+semester), which class/sections
+// they've actually held sessions for, and how many sessions so far.
+exports.getTeacherOverview = catchAsync(async (req, res, next) => {
+  const teacherId = req.params.teacherId || req.user._id;
+
+  if (req.user.role === "teacher" && String(teacherId) !== String(req.user._id)) {
+    return next(new AppError("You can only view your own class overview.", 403));
+  }
+
+  const subjects = await Subject.find({ assignedTeacher: teacherId }).populate("department", "name code");
+
+  let totalStudents = 0;
+  const subjectOverview = [];
+
+  for (const subject of subjects) {
+    const studentCount = await User.countDocuments({
+      role: "student",
+      department: subject.department._id,
+      semester: subject.semester,
+    });
+    totalStudents += studentCount;
+
+    const sections = await Attendance.distinct("className", { subject: subject._id, teacher: teacherId });
+    const sessionsHeld = await Attendance.countDocuments({ subject: subject._id, teacher: teacherId });
+
+    subjectOverview.push({
+      subjectId: subject._id,
+      subjectName: subject.subjectName,
+      subjectCode: subject.subjectCode,
+      department: subject.department.code,
+      semester: subject.semester,
+      studentCount,
+      sections: sections.filter((s) => s).length ? sections.filter((s) => s) : ["(no section label)"],
+      sessionsHeld,
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      totalSubjects: subjects.length,
+      totalStudents,
+      subjects: subjectOverview,
+    },
+  });
+});
+
+// Student's own enrolled classes: every subject that matches their
+// department + semester, with the assigned teacher and their attendance
+// percentage in that specific subject — even for subjects with 0 classes
+// held yet.
+exports.getStudentClasses = catchAsync(async (req, res, next) => {
+  const studentId = req.params.studentId || req.user._id;
+
+  if (req.user.role === "student" && String(studentId) !== String(req.user._id)) {
+    return next(new AppError("You can only view your own classes.", 403));
+  }
+
+  const student = await User.findOne({ _id: studentId, role: "student" });
+  if (!student) return next(new AppError("Student not found", 404));
+
+  const subjects = await Subject.find({
+    department: student.department,
+    semester: student.semester,
+  }).populate("assignedTeacher", "name email");
+
+  const classes = [];
+  for (const subject of subjects) {
+    const sessions = await Attendance.find({ subject: subject._id }).select("_id");
+    const sessionIds = sessions.map((s) => s._id);
+
+    const records = await AttendanceRecord.find({
+      attendance: { $in: sessionIds },
+      student: studentId,
+    });
+
+    const total = records.length;
+    const present = records.filter((r) => r.status === "Present" || r.status === "Late").length;
+
+    classes.push({
+      subjectId: subject._id,
+      subjectName: subject.subjectName,
+      subjectCode: subject.subjectCode,
+      teacherName: subject.assignedTeacher?.name || "Not assigned yet",
+      totalClasses: total,
+      present,
+      percentage: total ? Number(((present / total) * 100).toFixed(2)) : 0,
+    });
+  }
+
+  res.status(200).json({ success: true, data: classes });
+});
+
 // Admin dashboard quick stats
 exports.getDashboardStats = catchAsync(async (req, res) => {
   const [totalStudents, totalTeachers, totalSubjects, todaysSessions] = await Promise.all([
