@@ -8,6 +8,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
+  const [view, setView] = useState("mark");
   const [subjects, setSubjects] = useState([]);
   const [subjectId, setSubjectId] = useState("");
   const [className, setClassName] = useState("");
@@ -18,8 +19,20 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [overview, setOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
 
   const notify = (message, type = "success") => setToast({ message, type });
+
+  const loadOverview = () => {
+    setOverviewLoading(true);
+    api.get("/attendance/teacher-overview").then(({ data }) => setOverview(data.data)).finally(() => setOverviewLoading(false));
+  };
+
+  useEffect(() => {
+    if (view === "overview") loadOverview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   useEffect(() => {
     api.get("/subjects").then(({ data }) => {
@@ -82,6 +95,15 @@ export default function TeacherDashboard() {
       <Topbar title="Teacher Dashboard" />
       <div className="page-scroll">
         <div className="dashboard-body">
+          <div className="tabs">
+            <button className={`tab ${view === "mark" ? "active" : ""}`} onClick={() => setView("mark")}>Mark Attendance</button>
+            <button className={`tab ${view === "overview" ? "active" : ""}`} onClick={() => setView("overview")}>My Classes</button>
+          </div>
+
+          {view === "overview" ? (
+            <TeacherOverview overview={overview} loading={overviewLoading} />
+          ) : (
+          <>
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="section-title">Mark Attendance</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
@@ -159,9 +181,61 @@ export default function TeacherDashboard() {
               </table>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
       <Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
+    </div>
+  );
+}
+
+function TeacherOverview({ overview, loading }) {
+  if (loading) return <div className="card empty-state">Loading your classes...</div>;
+  if (!overview) return null;
+
+  return (
+    <div>
+      <div className="stat-grid">
+        <div className="stat-card">
+          <div className="num">{overview.totalSubjects}</div>
+          <div className="label">Subjects Assigned</div>
+        </div>
+        <div className="stat-card">
+          <div className="num">{overview.totalStudents}</div>
+          <div className="label">Total Students (across subjects)</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">Subject-wise Breakdown</div>
+        {overview.subjects.length === 0 ? (
+          <div className="empty-state">No subjects assigned to you yet. Ask your admin to assign one.</div>
+        ) : (
+          <table className="ledger-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Dept · Sem</th>
+                <th>Students</th>
+                <th>Sections held</th>
+                <th>Sessions held</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.subjects.map((s) => (
+                <tr key={s.subjectId}>
+                  <td>{s.subjectName} <span className="roll-chip">{s.subjectCode}</span></td>
+                  <td>{s.department} · Sem {s.semester}</td>
+                  <td>{s.studentCount}</td>
+                  <td>{s.sections.join(", ")}</td>
+                  <td>{s.sessionsHeld}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
