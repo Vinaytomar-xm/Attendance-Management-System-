@@ -31,17 +31,34 @@ function PercentRing({ percentage }) {
 export default function StudentDashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("overview");
+  const [classes, setClasses] = useState(null);
+  const [classesLoading, setClassesLoading] = useState(false);
 
   useEffect(() => {
     api.get("/attendance/summary").then(({ data }) => setSummary(data.data)).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (view === "classes" && !classes) {
+      setClassesLoading(true);
+      api.get("/attendance/my-classes").then(({ data }) => setClasses(data.data)).finally(() => setClassesLoading(false));
+    }
+  }, [view, classes]);
 
   return (
     <div className="app-shell">
       <Topbar title="Student Dashboard" />
       <div className="page-scroll">
         <div className="dashboard-body">
-          {loading ? (
+          <div className="tabs">
+            <button className={`tab ${view === "overview" ? "active" : ""}`} onClick={() => setView("overview")}>Overview</button>
+            <button className={`tab ${view === "classes" ? "active" : ""}`} onClick={() => setView("classes")}>My Classes</button>
+          </div>
+
+          {view === "classes" ? (
+            <MyClasses classes={classes} loading={classesLoading} />
+          ) : loading ? (
             <div className="empty-state">Loading your attendance...</div>
           ) : (
             <>
@@ -118,6 +135,53 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MyClasses({ classes, loading }) {
+  if (loading) return <div className="card empty-state">Loading your classes...</div>;
+  if (!classes) return null;
+
+  return (
+    <div className="card">
+      <div className="section-title">All Enrolled Subjects ({classes.length})</div>
+      {classes.length === 0 ? (
+        <div className="empty-state">No subjects found for your department & semester yet.</div>
+      ) : (
+        <table className="ledger-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Teacher</th>
+              <th>Classes Held</th>
+              <th>Present</th>
+              <th>Attendance %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {classes.map((c) => (
+              <tr key={c.subjectId}>
+                <td>{c.subjectName} <span className="roll-chip">{c.subjectCode}</span></td>
+                <td>{c.teacherName}</td>
+                <td>{c.totalClasses}</td>
+                <td>{c.present}</td>
+                <td>
+                  <span
+                    className="status-badge"
+                    style={{
+                      background: c.percentage >= 75 ? "rgba(63,110,82,0.15)" : "rgba(163,57,46,0.15)",
+                      color: c.percentage >= 75 ? "#2c4f3b" : "#7c2a21",
+                    }}
+                  >
+                    {c.percentage}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
