@@ -30,25 +30,31 @@ exports.markAttendance = catchAsync(async (req, res, next) => {
 
   const sessionDate = normalizeDate(date);
 
-  // Prevents duplicate sessions — also enforced at the DB level by a unique index.
-  const existing = await Attendance.findOne({
+  // If this session already exists, treat this as a CORRECTION: replace
+  // the existing marks instead of blocking. This lets a teacher fix a
+  // mistake (wrong status) without needing database access.
+  let attendance = await Attendance.findOne({
     teacher: req.user._id,
     subject: subjectId,
     className: className || "",
     date: sessionDate,
   });
-  if (existing) {
-    return next(new AppError("Attendance for this class, subject and date has already been marked.", 409));
-  }
 
-  const attendance = await Attendance.create({
-    date: sessionDate,
-    teacher: req.user._id,
-    subject: subjectId,
-    department: subject.department,
-    semester: subject.semester,
-    className: className || "",
-  });
+  const isUpdate = !!attendance;
+
+  if (!attendance) {
+    attendance = await Attendance.create({
+      date: sessionDate,
+      teacher: req.user._id,
+      subject: subjectId,
+      department: subject.department,
+      semester: subject.semester,
+      className: className || "",
+    });
+  } else {
+    // Wipe the old marks for this session before writing the new ones.
+    await AttendanceRecord.deleteMany({ attendance: attendance._id });
+  }
 
   const recordDocs = records.map((r) => ({
     attendance: attendance._id,
@@ -58,10 +64,10 @@ exports.markAttendance = catchAsync(async (req, res, next) => {
 
   await AttendanceRecord.insertMany(recordDocs, { ordered: false });
 
-  res.status(201).json({
+  res.status(isUpdate ? 200 : 201).json({
     success: true,
-    message: "Attendance marked successfully",
-    data: { attendanceId: attendance._id, totalMarked: recordDocs.length },
+    message: isUpdate ? "Attendance updated successfully" : "Attendance marked successfully",
+    data: { attendanceId: attendance._id, totalMarked: recordDocs.length, updated: isUpdate },
   });
 });
 

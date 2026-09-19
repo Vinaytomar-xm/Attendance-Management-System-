@@ -1,12 +1,12 @@
 const dotenv = require("dotenv");
 dotenv.config();
-  
+
 const app = require("./app");
 const connectDB = require("./config/db");
-const User = require("./models/User")
+const User = require("./models/User");
 
 process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION 💥 Shutting down...");
+  console.error("UNCAUGHT EXCEPTION  Shutting down...");
   console.error(err.name, err.message);
   process.exit(1);
 });
@@ -15,6 +15,17 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
+
+  // Debug listener: tells us in the terminal whether the User indexes
+  // (including the unique rollNo+department one) actually built successfully.
+  // User.on("index", (err) => {
+  //   if (err) {
+  //     console.error("❌ User index build FAILED:", err.message);
+  //   } else {
+  //     console.log("✅ User indexes synced successfully");
+  //   }
+  // });
+
   await User.syncIndexes();
 
   const server = app.listen(PORT, () => {
