@@ -7,13 +7,21 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Silent check on app load / refresh: the httpOnly cookie is sent
-  // automatically, so this just confirms whether the session is still valid.
+  // On app load / refresh: if a token was saved from a previous login,
+  // the axios interceptor attaches it automatically — this just confirms
+  // whether that token is still valid.
   const refreshSession = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     try {
       const { data } = await api.get("/auth/me");
       setUser(data.user);
     } catch {
+      localStorage.removeItem("token");
       setUser(null);
     } finally {
       setLoading(false);
@@ -26,6 +34,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
     setUser(data.user);
     return data.user;
   };
@@ -34,6 +45,7 @@ export function AuthProvider({ children }) {
     try {
       await api.post("/auth/logout");
     } finally {
+      localStorage.removeItem("token");
       setUser(null);
     }
   };

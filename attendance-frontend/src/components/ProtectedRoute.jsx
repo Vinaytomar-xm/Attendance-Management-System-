@@ -7,7 +7,7 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   if (loading) {
     return (
       <div className="center-screen">
-        <div className="spinner"></div>
+        <div className="w-6 h-6 border-[3px] border-white/30 border-t-paper rounded-full animate-spin"></div>
       </div>
     );
   }

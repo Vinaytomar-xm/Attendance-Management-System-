@@ -27,27 +27,30 @@ export default function Login() {
   };
 
   return (
-    <div className="login-wrap">
-      <div className="login-hero">
-        <div className="brand">
-          <div className="brand-mark">AR</div>
-          <div className="brand-text">
-            <h1>Attendance Register</h1>
-            <span>College Attendance Management</span>
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
+      <div className="hidden lg:flex flex-col justify-between p-16 bg-hero-glow text-paper">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brass-light to-brass flex items-center justify-center font-display font-bold text-ink text-lg shadow-brand-mark shrink-0">
+            AR
+          </div>
+          <div>
+            <h1 className="text-lg text-paper">Attendance Register</h1>
+            <span className="text-xs text-paper-line uppercase tracking-wider">College Attendance Management</span>
           </div>
         </div>
-        <p className="login-hero-quote">
-          Every roll call, <span>recorded</span>. Every percentage, <span>accurate</span>. One register for admins, teachers, and students.
+        <p className="font-display text-[30px] leading-snug max-w-[420px] text-paper">
+          Every roll call, <span className="text-brass-light italic">recorded</span>. Every percentage,{" "}
+          <span className="text-brass-light italic">accurate</span>. One register for admins, teachers, and students.
         </p>
-        <div style={{ color: "#d8cdb0", fontSize: 13 }}>
+        <div className="text-paper-line text-[13px]">
           Departments · Subjects · Sessions · Attendance — all in one ledger.
         </div>
       </div>
 
-      <div className="login-form-side">
-        <div className="card login-card">
-          <h2>Welcome back</h2>
-          <span className="sub">Sign in to open your register</span>
+      <div className="flex items-center justify-center p-8 bg-ink">
+        <div className="card w-full max-w-[400px] px-9 py-10">
+          <h2 className="text-2xl mb-1">Welcome back</h2>
+          <span className="block text-muted text-sm mb-6">Sign in to open your register</span>
 
           {error && <div className="error-banner">{error}</div>}
 
@@ -76,8 +79,12 @@ export default function Login() {
                 placeholder="••••••••"
               />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
-              {loading ? <span className="spinner" style={{ width: 16, height: 16 }}></span> : "Sign In"}
+            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+              {loading ? (
+                <span className="w-4 h-4 border-[3px] border-white/30 border-t-paper rounded-full animate-spin"></span>
+              ) : (
+                "Sign In"
+              )}
             </button>
           </form>
         </div>

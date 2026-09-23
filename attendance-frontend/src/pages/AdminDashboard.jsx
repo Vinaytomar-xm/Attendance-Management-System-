@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import api from "../api/axios";
 import Topbar from "../components/Topbar";
 import Toast from "../components/Toast";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const TABS = ["Overview", "Departments", "Subjects", "Teachers", "Students"];
 
@@ -12,11 +13,11 @@ export default function AdminDashboard() {
   const notify = (message, type = "success") => setToast({ message, type });
 
   return (
-    <div className="app-shell">
+    <div className="min-h-screen flex flex-col">
       <Topbar title="Admin Dashboard" />
-      <div className="page-scroll">
-        <div className="dashboard-body">
-          <div className="tabs">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1180px] mx-auto px-6 pt-8 pb-16">
+          <div className="flex gap-1.5 mb-6 flex-wrap">
             {TABS.map((t) => (
               <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
                 {t}
@@ -53,8 +54,8 @@ function Overview() {
 
   return (
     <div>
-      <div className="section-title">At a glance</div>
-      <div className="stat-grid">
+      <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">At a glance</div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-[18px] mb-7">
         {cards.map((c) => (
           <div className="stat-card" key={c.label}>
             <div className="num">{c.value ?? "—"}</div>
@@ -71,6 +72,7 @@ function Departments({ notify }) {
   const [list, setList] = useState([]);
   const [form, setForm] = useState({ name: "", code: "" });
   const [loading, setLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = useCallback(() => {
     api.get("/departments").then(({ data }) => setList(data.data));
@@ -93,8 +95,9 @@ function Departments({ notify }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this department?")) return;
+  const handleDelete = async () => {
+    const id = pendingDelete;
+    setPendingDelete(null);
     try {
       await api.delete(`/departments/${id}`);
       notify("Department deleted");
@@ -105,9 +108,9 @@ function Departments({ notify }) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 }}>
+    <div className="grid grid-cols-[320px_1fr] gap-5">
       <div className="card">
-        <div className="section-title">Add Department</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Add Department</div>
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Name</label>
@@ -117,14 +120,14 @@ function Departments({ notify }) {
             <label>Code</label>
             <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required placeholder="CSE" />
           </div>
-          <button className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
+          <button className="btn btn-primary w-full" disabled={loading}>
             {loading ? "Saving..." : "Create Department"}
           </button>
         </form>
       </div>
 
       <div className="card">
-        <div className="section-title">All Departments ({list.length})</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">All Departments ({list.length})</div>
         {list.length === 0 ? (
           <div className="empty-state">No departments yet.</div>
         ) : (
@@ -142,7 +145,7 @@ function Departments({ notify }) {
                   <td>{d.name}</td>
                   <td><span className="roll-chip">{d.code}</span></td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(d._id)}>Delete</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => setPendingDelete(d._id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -150,6 +153,12 @@ function Departments({ notify }) {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        message={pendingDelete ? "This will permanently delete this department." : null}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -160,6 +169,7 @@ function Subjects({ notify }) {
   const [teachers, setTeachers] = useState([]);
   const [form, setForm] = useState({ subjectName: "", subjectCode: "", semester: "", department: "" });
   const [loading, setLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = useCallback(() => {
     api.get("/subjects").then(({ data }) => setList(data.data));
@@ -195,8 +205,9 @@ function Subjects({ notify }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this subject?")) return;
+  const handleDelete = async () => {
+    const id = pendingDelete;
+    setPendingDelete(null);
     try {
       await api.delete(`/subjects/${id}`);
       notify("Subject deleted");
@@ -207,9 +218,9 @@ function Subjects({ notify }) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 }}>
+    <div className="grid grid-cols-[320px_1fr] gap-5">
       <div className="card">
-        <div className="section-title">Add Subject</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Add Subject</div>
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Subject Name</label>
@@ -230,14 +241,14 @@ function Subjects({ notify }) {
               {departments.map((d) => <option key={d._id} value={d._id}>{d.name}</option>)}
             </select>
           </div>
-          <button className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
+          <button className="btn btn-primary w-full" disabled={loading}>
             {loading ? "Saving..." : "Create Subject"}
           </button>
         </form>
       </div>
 
       <div className="card">
-        <div className="section-title">All Subjects ({list.length})</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">All Subjects ({list.length})</div>
         {list.length === 0 ? (
           <div className="empty-state">No subjects yet.</div>
         ) : (
@@ -267,7 +278,7 @@ function Subjects({ notify }) {
                     </select>
                   </td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s._id)}>Delete</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => setPendingDelete(s._id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -275,6 +286,12 @@ function Subjects({ notify }) {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        message={pendingDelete ? "This will permanently delete this subject." : null}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
@@ -294,6 +311,8 @@ function PeopleManager({ role, notify, endpoint }) {
   const [form, setForm] = useState({
     name: "", email: "", password: "", department: "", rollNo: "", semester: "",
   });
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(() => {
     api.get(endpoint).then(({ data }) => setList(data.data));
@@ -317,8 +336,9 @@ function PeopleManager({ role, notify, endpoint }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this account?")) return;
+  const handleDelete = async () => {
+    const id = pendingDelete;
+    setPendingDelete(null);
     try {
       await api.delete(`${endpoint}/${id}`);
       notify("Deleted");
@@ -328,10 +348,20 @@ function PeopleManager({ role, notify, endpoint }) {
     }
   };
 
+  const filteredList = list.filter((p) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      p.name?.toLowerCase().includes(q) ||
+      p.email?.toLowerCase().includes(q) ||
+      p.rollNo?.toLowerCase().includes(q)
+    );
+  });
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 }}>
+    <div className="grid grid-cols-[320px_1fr] gap-5">
       <div className="card">
-        <div className="section-title">Add {role === "teacher" ? "Teacher" : "Student"}</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Add {role === "teacher" ? "Teacher" : "Student"}</div>
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Full Name</label>
@@ -364,16 +394,29 @@ function PeopleManager({ role, notify, endpoint }) {
               </div>
             </>
           )}
-          <button className="btn btn-primary" style={{ width: "100%" }} disabled={loading}>
+          <button className="btn btn-primary w-full" disabled={loading}>
             {loading ? "Saving..." : `Add ${role === "teacher" ? "Teacher" : "Student"}`}
           </button>
         </form>
       </div>
 
       <div className="card">
-        <div className="section-title">All {role === "teacher" ? "Teachers" : "Students"} ({list.length})</div>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-3.5">
+          <div className="text-[15px] text-muted uppercase tracking-wider">
+            All {role === "teacher" ? "Teachers" : "Students"} ({filteredList.length}{search ? ` of ${list.length}` : ""})
+          </div>
+          <input
+            type="text"
+            placeholder={`Search by name, email${role === "student" ? ", or roll no." : ""}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-3 py-2 rounded-lg border-[1.5px] border-paper-line bg-[#fffdf7] text-sm text-ink2 outline-none focus:border-brass focus:ring-[3px] focus:ring-brass/20 w-full sm:w-64"
+          />
+        </div>
         {list.length === 0 ? (
           <div className="empty-state">Nobody added yet.</div>
+        ) : filteredList.length === 0 ? (
+          <div className="empty-state">No matches for "{search}".</div>
         ) : (
           <table className="ledger-table">
             <thead>
@@ -387,7 +430,7 @@ function PeopleManager({ role, notify, endpoint }) {
               </tr>
             </thead>
             <tbody>
-              {list.map((p) => (
+              {filteredList.map((p) => (
                 <tr key={p._id}>
                   {role === "student" && <td><span className="roll-chip">{p.rollNo}</span></td>}
                   <td>{p.name}</td>
@@ -395,7 +438,7 @@ function PeopleManager({ role, notify, endpoint }) {
                   <td>{p.department?.code}</td>
                   {role === "student" && <td>{p.semester}</td>}
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)}>Delete</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => setPendingDelete(p._id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -403,6 +446,12 @@ function PeopleManager({ role, notify, endpoint }) {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        message={pendingDelete ? `This will permanently delete this ${role} account.` : null}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

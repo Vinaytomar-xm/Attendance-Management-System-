@@ -47,11 +47,11 @@ export default function StudentDashboard() {
   }, [view, classes]);
 
   return (
-    <div className="app-shell">
+    <div className="min-h-screen flex flex-col">
       <Topbar title="Student Dashboard" />
-      <div className="page-scroll">
-        <div className="dashboard-body">
-          <div className="tabs">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1180px] mx-auto px-6 pt-8 pb-16">
+          <div className="flex gap-1.5 mb-6 flex-wrap">
             <button className={`tab ${view === "overview" ? "active" : ""}`} onClick={() => setView("overview")}>Overview</button>
             <button className={`tab ${view === "classes" ? "active" : ""}`} onClick={() => setView("classes")}>My Classes</button>
           </div>
@@ -62,16 +62,16 @@ export default function StudentDashboard() {
             <div className="empty-state">Loading your attendance...</div>
           ) : (
             <>
-              <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card mb-5">
                 <div className="percent-ring-wrap">
                   <PercentRing percentage={summary?.overallPercentage || 0} />
                   <div>
                     <h2>Overall Attendance</h2>
-                    <p style={{ color: "var(--text-muted)", marginTop: 4 }}>
+                    <p className="text-muted mt-1">
                       {summary?.present} present out of {summary?.totalClasses} total classes
                     </p>
                     {summary?.overallPercentage < 75 && (
-                      <p style={{ color: "var(--stamp-red)", fontSize: 13, marginTop: 8, fontWeight: 600 }}>
+                      <p className="text-stamp-red text-[13px] mt-2 font-semibold">
                         Below the typical 75% requirement — attend upcoming classes to catch up.
                       </p>
                     )}
@@ -79,7 +79,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              <div className="stat-grid">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-[18px] mb-7">
                 <div className="stat-card">
                   <div className="num">{summary?.totalClasses ?? 0}</div>
                   <div className="label">Total Classes</div>
@@ -95,7 +95,7 @@ export default function StudentDashboard() {
               </div>
 
               <div className="card">
-                <div className="section-title">Subject-wise Breakdown</div>
+                <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Subject-wise Breakdown</div>
                 {(!summary?.subjectWise || summary.subjectWise.length === 0) ? (
                   <div className="empty-state">No attendance records yet.</div>
                 ) : (
@@ -116,11 +116,7 @@ export default function StudentDashboard() {
                           <td>{s.total}</td>
                           <td>
                             <span
-                              className="status-badge"
-                              style={{
-                                background: s.percentage >= 75 ? "rgba(63,110,82,0.15)" : "rgba(163,57,46,0.15)",
-                                color: s.percentage >= 75 ? "#2c4f3b" : "#7c2a21",
-                              }}
+                              className={`status-badge ${s.percentage >= 75 ? "bg-stamp-green/15 text-stamp-green-dark" : "bg-stamp-red/15 text-stamp-red-dark"}`}
                             >
                               {s.percentage}%
                             </span>
@@ -145,7 +141,7 @@ function MyClasses({ classes, loading }) {
 
   return (
     <div className="card">
-      <div className="section-title">All Enrolled Subjects ({classes.length})</div>
+      <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">All Enrolled Subjects ({classes.length})</div>
       {classes.length === 0 ? (
         <div className="empty-state">No subjects found for your department & semester yet.</div>
       ) : (
@@ -168,11 +164,7 @@ function MyClasses({ classes, loading }) {
                 <td>{c.present}</td>
                 <td>
                   <span
-                    className="status-badge"
-                    style={{
-                      background: c.percentage >= 75 ? "rgba(63,110,82,0.15)" : "rgba(163,57,46,0.15)",
-                      color: c.percentage >= 75 ? "#2c4f3b" : "#7c2a21",
-                    }}
+                    className={`status-badge ${c.percentage >= 75 ? "bg-stamp-green/15 text-stamp-green-dark" : "bg-stamp-red/15 text-stamp-red-dark"}`}
                   >
                     {c.percentage}%
                   </span>

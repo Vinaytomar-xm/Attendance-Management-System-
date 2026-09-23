@@ -3,11 +3,18 @@ const User = require("../models/User");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 
-// Verifies the JWT (read from the httpOnly cookie) and attaches the
-// current user to req.user. Blocks the request if the token is missing,
-// invalid, expired, or the user no longer exists / changed password since.
+// Verifies the JWT — read from the httpOnly cookie when available, or
+// from an "Authorization: Bearer <token>" header as a fallback. The header
+// fallback exists because modern browsers (Chrome's third-party cookie
+// restrictions) can silently block cross-site cookies between a Vercel
+// frontend and a Render backend even when SameSite=None; Secure is set
+// correctly — the header path is not affected by that restriction.
 exports.protect = catchAsync(async (req, res, next) => {
-  const token = req.cookies?.token;
+  let token = req.cookies?.token;
+
+  if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
 
   if (!token) {
     return next(new AppError("You are not logged in. Please log in to continue.", 401));
@@ -16,6 +23,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   let decoded;
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // console.log("Decoded token:", decoded); // Debugging line
   } catch (err) {
     return next(new AppError("Invalid or expired session. Please log in again.", 401));
   }

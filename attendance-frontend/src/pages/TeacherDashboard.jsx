@@ -12,6 +12,7 @@ export default function TeacherDashboard() {
   const [subjects, setSubjects] = useState([]);
   const [subjectId, setSubjectId] = useState("");
   const [className, setClassName] = useState("");
+  const [debouncedClassName, setDebouncedClassName] = useState("");
   const [date, setDate] = useState(todayISO());
   const [students, setStudents] = useState([]);
   const [marks, setMarks] = useState({});
@@ -23,6 +24,15 @@ export default function TeacherDashboard() {
   const [overviewLoading, setOverviewLoading] = useState(false);
 
   const notify = (message, type = "success") => setToast({ message, type });
+
+  // Wait until the teacher stops typing in the Class/Section field for
+  // 500ms before treating it as a real value — otherwise every keystroke
+  // would fire a fresh roster fetch (and collapse the table into a
+  // "Loading..." state each time, causing a jarring layout jump).
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedClassName(className), 500);
+    return () => clearTimeout(t);
+  }, [className]);
 
   const loadOverview = () => {
     setOverviewLoading(true);
@@ -47,7 +57,7 @@ export default function TeacherDashboard() {
     setLoading(true);
     try {
       const { data } = await api.get("/attendance/roster", {
-        params: { subjectId, className, date },
+        params: { subjectId, className: debouncedClassName, date },
       });
       setStudents(data.students);
       setAlreadyMarked(data.alreadyMarked);
@@ -68,7 +78,7 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (subjectId) loadRoster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjectId, className, date]);
+  }, [subjectId, debouncedClassName, date]);
 
   const setStatus = (studentId, status) => {
     setMarks((m) => ({ ...m, [studentId]: status }));
@@ -78,8 +88,8 @@ export default function TeacherDashboard() {
     setSaving(true);
     try {
       const records = students.map((s) => ({ studentId: s._id, status: marks[s._id] || "Present" }));
-      await api.post("/attendance/mark", { subjectId, className, date, records });
-      notify("Attendance saved successfully");
+      const { data } = await api.post("/attendance/mark", { subjectId, className: debouncedClassName, date, records });
+      notify(data.message || "Attendance saved successfully");
       setAlreadyMarked(true);
     } catch (err) {
       notify(err.response?.data?.message || "Failed to save attendance", "error");
@@ -91,11 +101,11 @@ export default function TeacherDashboard() {
   const currentSubject = subjects.find((s) => s._id === subjectId);
 
   return (
-    <div className="app-shell">
+    <div className="min-h-screen flex flex-col">
       <Topbar title="Teacher Dashboard" />
-      <div className="page-scroll">
-        <div className="dashboard-body">
-          <div className="tabs">
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="max-w-[1180px] mx-auto px-6 pt-8 pb-16">
+          <div className="flex gap-1.5 mb-6 flex-wrap">
             <button className={`tab ${view === "mark" ? "active" : ""}`} onClick={() => setView("mark")}>Mark Attendance</button>
             <button className={`tab ${view === "overview" ? "active" : ""}`} onClick={() => setView("overview")}>My Classes</button>
           </div>
@@ -104,9 +114,9 @@ export default function TeacherDashboard() {
             <TeacherOverview overview={overview} loading={overviewLoading} />
           ) : (
           <>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div className="section-title">Mark Attendance</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <div className="card mb-5">
+            <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Mark Attendance</div>
+            <div className="grid grid-cols-3 gap-4">
               <div className="field">
                 <label>Subject</label>
                 <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
@@ -126,28 +136,26 @@ export default function TeacherDashboard() {
               </div>
             </div>
             {alreadyMarked && (
-              <div className="error-banner" style={{ background: "rgba(63,110,82,0.1)", borderColor: "rgba(63,110,82,0.35)", color: "#2c4f3b" }}>
+              <div className="error-banner bg-stamp-green/10 border-stamp-green/35 text-stamp-green-dark">
                 Attendance for this session was already marked — you're viewing/editing existing marks.
               </div>
             )}
           </div>
 
           <div className="card">
-            <div className="flex-between" style={{ marginBottom: 14 }}>
-              <div className="section-title" style={{ margin: 0 }}>
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-3.5">
+              <div className="text-[15px] text-muted uppercase tracking-wider">
                 {currentSubject ? `${currentSubject.subjectName} · Semester ${currentSubject.semester}` : "Select a subject"}
               </div>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving || students.length === 0}>
-                {saving ? "Saving..." : "Save Attendance"}
+                {saving ? "Saving..." : alreadyMarked ? "Update Attendance" : "Save Attendance"}
               </button>
             </div>
 
-            {loading ? (
-              <div className="empty-state">Loading roster...</div>
-            ) : students.length === 0 ? (
+            {students.length === 0 && !loading ? (
               <div className="empty-state">No students found for this subject's department & semester.</div>
             ) : (
-              <table className="ledger-table">
+              <table className={`ledger-table transition-opacity ${loading ? "opacity-40" : "opacity-100"}`}>
                 <thead>
                   <tr>
                     <th>Roll No.</th>
@@ -196,7 +204,7 @@ function TeacherOverview({ overview, loading }) {
 
   return (
     <div>
-      <div className="stat-grid">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-[18px] mb-7">
         <div className="stat-card">
           <div className="num">{overview.totalSubjects}</div>
           <div className="label">Subjects Assigned</div>
@@ -208,7 +216,7 @@ function TeacherOverview({ overview, loading }) {
       </div>
 
       <div className="card">
-        <div className="section-title">Subject-wise Breakdown</div>
+        <div className="text-[15px] text-muted uppercase tracking-wider mb-3.5">Subject-wise Breakdown</div>
         {overview.subjects.length === 0 ? (
           <div className="empty-state">No subjects assigned to you yet. Ask your admin to assign one.</div>
         ) : (
