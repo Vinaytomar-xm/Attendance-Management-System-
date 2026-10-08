@@ -20,6 +20,17 @@ attendance-backend/     Node.js + Express + MongoDB API
 attendance-frontend/    React (Vite) + custom CSS, no Tailwind/UI kit
 ```
 
+## Tech Stack
+
+| Layer    | Technologies |
+|----------|--------------|
+| Frontend | React (Vite), custom hand-written CSS |
+| Backend  | Node.js, Express |
+| Database | MongoDB (Atlas or local) |
+| Auth     | JWT in httpOnly cookies, bcrypt |
+| Security | helmet, express-mongo-sanitize, hpp, rate limiting, strict CORS |
+| Deploy   | Vercel (frontend), Render (backend) |
+
 ## Security features (backend)
 
 - Passwords hashed with **bcrypt** (cost factor 12), never returned in API responses
